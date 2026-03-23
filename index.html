@@ -1,0 +1,217 @@
+  <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoje • 1 Dia Antes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        
+        .task-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .task-card:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -5px rgb(165 243 252 / 0.15); }
+        
+        .progress-bar { transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .modal { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-50 to-white min-h-screen flex items-center justify-center p-6">
+    <!-- Celular simulado -->
+    <div class="w-full max-w-[380px] bg-white rounded-3xl shadow-2xl overflow-hidden border border-sky-100" style="height: 720px;">
+        
+        <!-- HEADER -->
+        <div class="bg-white px-6 pt-8 pb-5 border-b">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-semibold text-slate-800 tracking-tighter">Hoje</h1>
+                    <p id="current-date" class="text-sky-500 text-sm font-medium"></p>
+                </div>
+                
+                <!-- Progresso -->
+                <div class="flex-1 mx-6">
+                    <div class="flex items-center text-xs text-slate-400 mb-1">
+                        <span id="progress-text" class="font-semibold text-sky-600">0%</span>
+                        <span class="flex-1 h-px bg-sky-100 mx-3"></span>
+                    </div>
+                    <div class="h-2 bg-sky-100 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="progress-bar h-2 bg-gradient-to-r from-sky-400 to-cyan-400 rounded-full w-0"></div>
+                    </div>
+                </div>
+                
+                <div class="w-10 h-10 bg-sky-100 rounded-2xl flex items-center justify-center text-sky-600">
+                    <i class="fa-solid fa-sun text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE TAREFAS -->
+        <div id="task-list" class="flex-1 overflow-y-auto px-4 py-3 space-y-3"></div>
+
+        <!-- BOTÃO FLUTUANTE -->
+        <button onclick="showAddModal()" 
+                class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-sky-500 to-cyan-400 text-white rounded-3xl shadow-2xl flex items-center justify-center text-4xl active:scale-95 transition-all z-50">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <!-- RODAPÉ -->
+        <div class="h-16 border-t border-sky-100 flex items-center px-6 text-slate-400">
+            <div class="flex-1 text-center text-sky-500">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span class="text-[10px] block mt-1">Hoje</span>
+            </div>
+            <div onclick="alert('Semana em breve')" class="flex-1 text-center text-slate-300 cursor-pointer">
+                <i class="fa-solid fa-calendar"></i>
+                <span class="text-[10px] block mt-1">Semana</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="add-modal" class="hidden fixed inset-0 bg-black/40 flex items-end z-[100]">
+        <div class="modal bg-white w-full max-w-[380px] rounded-t-3xl p-6">
+            <div class="flex justify-between mb-6">
+                <h2 class="text-xl font-semibold text-slate-800">Nova tarefa</h2>
+                <button onclick="hideAddModal()" class="text-2xl text-slate-400">✕</button>
+            </div>
+
+            <form id="task-form" onsubmit="addTask(event)">
+                <input type="text" id="task-name" placeholder="O que precisa fazer?" 
+                       class="w-full px-5 py-4 border border-sky-200 rounded-3xl focus:outline-none focus:border-sky-400 text-lg mb-5" required>
+                
+                <div class="mb-5">
+                    <label class="text-xs text-slate-500 mb-2 block">HORÁRIO</label>
+                    <input type="time" id="task-time" class="w-full px-5 py-4 border border-sky-200 rounded-3xl focus:outline-none focus:border-sky-400" required>
+                </div>
+
+                <div>
+                    <label class="text-xs text-slate-500 mb-3 block">CATEGORIA</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <button type="button" onclick="selectCategory(this)" data-category="Trabalho" class="category-btn py-3 rounded-3xl border border-sky-200 text-sm">💼 Trabalho</button>
+                        <button type="button" onclick="selectCategory(this)" data-category="Estudo" class="category-btn py-3 rounded-3xl border border-sky-200 text-sm">📚 Estudo</button>
+                        <button type="button" onclick="selectCategory(this)" data-category="Saúde" class="category-btn py-3 rounded-3xl border border-sky-200 text-sm">🧘 Saúde</button>
+                        <button type="button" onclick="selectCategory(this)" data-category="Pessoal" class="category-btn py-3 rounded-3xl border border-sky-200 text-sm">❤️ Pessoal</button>
+                    </div>
+                    <input type="hidden" id="task-category" value="">
+                </div>
+
+                <button type="submit" 
+                        class="mt-10 w-full py-4 bg-sky-500 text-white font-semibold text-lg rounded-3xl active:bg-sky-600 transition-all">
+                    Adicionar ao dia
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('todayTasks')) || [
+            {id:1, time:"09:00", name:"Reunião de planejamento", category:"Trabalho", completed:false},
+            {id:2, time:"11:30", name:"Entregar relatório", category:"Trabalho", completed:true},
+            {id:3, time:"15:00", name:"Consulta nutricionista", category:"Saúde", completed:false}
+        ]
+
+        function sortTasks() { tasks.sort((a,b) => a.time.localeCompare(b.time)) }
+
+        function renderTasks() {
+            const container = document.getElementById('task-list')
+            container.innerHTML = ''
+
+            if (tasks.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-slate-300"><i class="fa-solid fa-check-circle text-7xl mb-6"></i><p class="text-xl">Dia completamente livre!</p></div>`
+                updateProgress()
+                return
+            }
+
+            tasks.forEach(task => {
+                const card = document.createElement('div')
+                card.className = `task-card flex items-center gap-4 bg-white border border-sky-100 rounded-3xl px-5 py-5`
+                card.innerHTML = `
+                    <div class="font-mono text-sky-500 w-12 text-right">${task.time}</div>
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                           onchange="toggleComplete(${task.id})" class="w-7 h-7 accent-sky-500">
+                    <div class="flex-1">
+                        <p class="\( {task.completed ? 'line-through text-slate-400' : 'text-slate-700'} font-medium"> \){task.name}</p>
+                        <span class="text-xs px-4 py-1 bg-sky-100 text-sky-600 rounded-3xl">${task.category}</span>
+                    </div>
+                    <button onclick="deleteTask(${task.id})" class="text-slate-300 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+                `
+                container.appendChild(card)
+            })
+            updateProgress()
+        }
+
+        function updateProgress() {
+            const done = tasks.filter(t => t.completed).length
+            const perc = tasks.length ? Math.round(done / tasks.length * 100) : 0
+            document.getElementById('progress-bar').style.width = perc + '%'
+            document.getElementById('progress-text').textContent = perc + '%'
+        }
+
+        function toggleComplete(id) {
+            tasks = tasks.map(t => t.id === id ? {...t, completed: !t.completed} : t)
+            localStorage.setItem('todayTasks', JSON.stringify(tasks))
+            renderTasks()
+        }
+
+        function deleteTask(id) {
+            if (confirm('Excluir tarefa?')) {
+                tasks = tasks.filter(t => t.id !== id)
+                localStorage.setItem('todayTasks', JSON.stringify(tasks))
+                renderTasks()
+            }
+        }
+
+        function showAddModal() {
+            document.getElementById('add-modal').classList.remove('hidden')
+            document.getElementById('task-name').focus()
+        }
+
+        function hideAddModal() {
+            document.getElementById('add-modal').classList.add('hidden')
+        }
+
+        window.selectCategory = function(btn) {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('border-sky-400', 'bg-sky-50'))
+            btn.classList.add('border-sky-400', 'bg-sky-50')
+            document.getElementById('task-category').value = btn.dataset.category
+        }
+
+        window.addTask = function(e) {
+            e.preventDefault()
+            const name = document.getElementById('task-name').value.trim()
+            const time = document.getElementById('task-time').value
+            const category = document.getElementById('task-category').value || 'Pessoal'
+
+            if (!name || !time) return
+
+            tasks.push({ id: Date.now(), time, name, category, completed: false })
+            sortTasks()
+            localStorage.setItem('todayTasks', JSON.stringify(tasks))
+            renderTasks()
+            hideAddModal()
+            document.getElementById('task-form').reset()
+
+            // Simulação da notificação (1 dia antes)
+            console.log(`%c🛎️  Notificação PUSH agendada: 1 dia antes de ${time} → ${name}`, 'color:#0ea5e9; font-weight:600')
+        }
+
+        function setDate() {
+            const el = document.getElementById('current-date')
+            const now = new Date()
+            el.textContent = now.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'})
+        }
+
+        function init() {
+            sortTasks()
+            renderTasks()
+            setDate()
+            console.log('%c📱 App inicializado — Notificações push serão enviadas EXATAMENTE 1 DIA ANTES de cada tarefa', 'color:#64748b')
+        }
+
+        window.onload = init
+    </script>
+</body>
+</html>
